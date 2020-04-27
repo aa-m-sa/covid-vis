@@ -178,7 +178,7 @@ else:
 # REGRESSION MODELING
 
 regX = pd.DataFrame()
-regX['pop'] = np.log(x)
+regX['pop'] = np.log10(x)
 regX['region'] = reg
 
 from sklearn.linear_model import LinearRegression
@@ -188,9 +188,9 @@ from sklearn.preprocessing import OneHotEncoder
 t = ColumnTransformer(transformers=[('onehot', OneHotEncoder(), ['region'])], remainder='passthrough')
 features = t.fit_transform(regX)
 
-reg = LinearRegression()
-model = reg.fit(features, y)
-R2 = reg.score(features, y)
+linreg = LinearRegression()
+model = linreg.fit(features, y)
+R2 = linreg.score(features, y)
 
 ax.set_title("Regional differences in Covid deaths vs country population", fontweight='bold', fontsize=16)
 print("R-squared: {:.3f} (log-log scale)".format(R2))
@@ -203,11 +203,28 @@ for region in regions:
     lineX['pop'] = xline
     lineX['region'] = [region]*2
     pfeatures = t.transform(lineX)
-    yline = reg.predict(pfeatures)
-    plt.plot(np.exp(xline), yline, linewidth=3.5, color=color[region], alpha=0.182)
+    yline = linreg.predict(pfeatures)
+    plt.plot(np.power(10, xline), yline, linewidth=3.5, color=color[region], alpha=0.182)
 
 ax.annotate("Sources: Covid data from ourworldindata.org, population data from worldometers.info",
             xy=(10, 10), xycoords='figure pixels', color='gray', fontsize=10)
 
 plt.savefig("figures/Rsquared.png", dpi=300)
 plt.show()
+
+# coef
+# array([ 0.09412175, -0.61972368,  0.52560193,  0.67721309])
+# intercept
+# 0.00848755424313663
+
+# log(y) = sum_i a_i log(x_i) + b
+# with single x of interest, letting b eat rest (b' = b  + sumj a_j log x_j)
+
+# y = xi^ai  * 10^b
+# in general,
+# log(y) = log(x1^a1) + log(x2^a2) + log(x3^a3) + log(xpop^apop) + b
+# log(y) = log(x1^a1 * x2^a2 * x3^a3 * b)
+# y = x1^a1 * x2^a2 * x3^a3 * xpop ^ apop * 10^b
+
+# log(x1) = 0 / 1 indicator -> 1 / 10 indicator
+
