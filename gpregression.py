@@ -29,7 +29,9 @@ gpr_eu.fit(regXeu, yeu)
 gpr_am.fit(regXam, yam)
 gpr_ap.fit(regXap, yap)
 
+xt2 = np.linspace(np.min(regXa[:,0]), np.max(regXa[:,0]+np.log(4)), 100).reshape(-1,1)
 xt = np.linspace(np.min(regXa[:,0]), np.max(regXa[:,0]), 100).reshape(-1,1)
+
 
 y_pred_eu, sigma_eu = gpr_eu.predict(xt, return_std=True)
 y_pred_am, sigma_am = gpr_am.predict(xt, return_std=True)
@@ -93,6 +95,10 @@ plt.plot(np.power(10, xt), y_pred_ap, linewidth=3.5, color=color[regions[2]], al
 ax.annotate("Sources: Covid data from ourworldindata.org, population data from worldometers.info\n Code at github.com/aa-m-sa/covid-vis , a fork of github.com/teemuroos/covid-vis" ,
             xy=(10, 10), xycoords='figure pixels', color='gray', fontsize=10)
 
+# add linear trend
+
+plt.plot(np.power(10, xt), xt, linewidth=1, color="black", alpha=0.5, linestyle="dashed")
+
 plt.savefig("figures/gpregression.png", dpi=300)
 
 
@@ -106,27 +112,72 @@ plt.plot(np.power(10,xt),
          (y_pred_eu + 1.9600 * sigma_eu).reshape(-1,1),
          alpha=0.4, color=color[regions[0]], linewidth=2, linestyle="dashed")
 
+plt.savefig("figures/gpregression_with_europe_CI.png", dpi=300)
+
+
+# # posterior interval
+
+# plt.plot(np.power(10,xt),
+#          (y_pred_am - 1.9600 * sigma_am).reshape(-1,1),
+#          alpha=0.4, color=color[regions[1]], linewidth=2, linestyle="dotted")
+
+# plt.plot(np.power(10,xt),
+#          (y_pred_am + 1.9600 * sigma_am).reshape(-1,1),
+#          alpha=0.4, color=color[regions[1]], linewidth=2, linestyle="dotted")
+
+# # posterior interval
+
+# plt.plot(np.power(10,xt),
+#          (y_pred_ap - 1.9600 * sigma_ap).reshape(-1,1),
+#          alpha=0.4, color=color[regions[2]], linewidth=2, linestyle="dashdot")
+
+# plt.plot(np.power(10,xt),
+#          (y_pred_ap + 1.9600 * sigma_ap).reshape(-1,1),
+#          alpha=0.4, color=color[regions[2]], linewidth=2, linestyle="dashdot")
+
+
+
+# plt.savefig("figures/gpregression_withCI.png", dpi=300)
+
+
+## No Russia in set of Europe region?
+
+regXa_norus = regXa[np.array(lab)!="RUS",:]
+y_norus = y[np.array(lab)!="RUS"]
+
+#regXa_norus = regXa[np.bitwise_and(np.array(lab)!="RUS", np.array(lab)!="UKR"),:]
+#y_norus = y[np.bitwise_and(np.array(lab)!="RUS", np.array(lab)!="UKR")]
+
+regXeu_norus = regXa_norus[regXa_norus[:,1]=="Europe",0].reshape(-1,1)
+yeu_norus = y_norus[regXa_norus[:,1]=="Europe"]
+
+gpr_eu_norus = GaussianProcessRegressor(kernel=RationalQuadratic()+WhiteKernel(), n_restarts_optimizer=9)
+
+gpr_eu_norus.fit(regXeu_norus, yeu_norus)
+y_pred_eu_norus, sigma_eu_norus = gpr_eu_norus.predict(xt, return_std=True)
+
+plt.plot(np.power(10, xt), y_pred_eu_norus, linewidth=2, color="black", alpha=0.3)
+
 # posterior interval
 
 plt.plot(np.power(10,xt),
-         (y_pred_am - 1.9600 * sigma_am).reshape(-1,1),
-         alpha=0.4, color=color[regions[1]], linewidth=2, linestyle="dotted")
+         (y_pred_eu_norus - 1.9600 * sigma_eu_norus).reshape(-1,1),
+         alpha=0.4, color="black", linewidth=2, linestyle="dashed")
 
 plt.plot(np.power(10,xt),
-         (y_pred_am + 1.9600 * sigma_am).reshape(-1,1),
-         alpha=0.4, color=color[regions[1]], linewidth=2, linestyle="dotted")
+         (y_pred_eu_norus + 1.9600 * sigma_eu_norus).reshape(-1,1),
+         alpha=0.4, color="black", linewidth=2, linestyle="dashed")
 
-# posterior interval
+plt.savefig("figures/gpregression_with_europe_CI_noRUS.png", dpi=300)
+plt.show()
 
-plt.plot(np.power(10,xt),
-         (y_pred_ap - 1.9600 * sigma_ap).reshape(-1,1),
-         alpha=0.4, color=color[regions[2]], linewidth=2, linestyle="dashdot")
+f, ax = plt.subplots(figsize=(width, 7))
+sns.set_style("dark")
+sns.set(font_scale=1.15)
+p = sns.scatterplot(x = regXeu_norus[:,0], y = yeu_norus, ax=ax)
 
-plt.plot(np.power(10,xt),
-         (y_pred_ap + 1.9600 * sigma_ap).reshape(-1,1),
-         alpha=0.4, color=color[regions[2]], linewidth=2, linestyle="dashdot")
+ax.set(xscale='linear', yscale='linear')
 
-
-
-plt.savefig("figures/gpregression_withCI.png", dpi=300)
+plt.plot(xt, y_pred_eu_norus, linewidth=3.5, color=color[regions[0]], alpha=0.6)
+plt.savefig("figures/gpregression_with_europe_CI_noRUS2.png", dpi=300)
 plt.show()
